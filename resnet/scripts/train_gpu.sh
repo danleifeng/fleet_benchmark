@@ -33,16 +33,23 @@ FUSE=True
 NCCL_COMM_NUM=1
 NUM_THREADS=2
 USE_HIERARCHICAL_ALLREDUCE=False
-NUM_CARDS=2
+NUM_CARDS=1
 FP16=False #whether to use float16 
 
 if [[ ${FUSE} == "True" ]]; then
     export FLAGS_fuse_parameter_memory_size=16 #MB
     export FLAGS_fuse_parameter_groups_size=50
 fi
+
+ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
+
 distributed_args=""
+if [[ ${ips} != ""]]; then
+    distributed_args="--cluster_node_ips=$ips"
+fi
+
 if [[ ${NUM_CARDS} == "1" ]]; then
-    distributed_args="--selected_gpus 0"
+    distributed_args="${distributed_args} --selected_gpus 0"
 fi
 
 set -x
