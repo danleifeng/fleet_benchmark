@@ -41,6 +41,8 @@ if [[ ${FUSE} == "True" ]]; then
     export FLAGS_fuse_parameter_groups_size=50
 fi
 
+python utils/k8s_tools.py fetch_ips k8s_ips
+
 ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
 
 distributed_args=""
