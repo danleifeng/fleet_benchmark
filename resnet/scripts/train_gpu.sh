@@ -33,7 +33,7 @@ FUSE=True
 NCCL_COMM_NUM=1
 NUM_THREADS=2
 USE_HIERARCHICAL_ALLREDUCE=False
-NUM_CARDS=1
+NUM_CARDS=8
 FP16=False #whether to use float16 
 
 if [[ ${FUSE} == "True" ]]; then
