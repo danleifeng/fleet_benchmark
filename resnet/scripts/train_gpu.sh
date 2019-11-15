@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 10m
+#sleep 10m
 export FLAGS_sync_nccl_allreduce=1
 export FLAGS_cudnn_exhaustive_search=1
 export FLAGS_conv_workspace_size_limit=7000 #MB
