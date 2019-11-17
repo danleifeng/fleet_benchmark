@@ -43,6 +43,12 @@ fi
 
 python utils/k8s_tools.py fetch_ips k8s_ips
 
+hostname -i
+
+env
+
+sleep 5m
+
 ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
 
 distributed_args=""
