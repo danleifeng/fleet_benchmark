@@ -22,9 +22,6 @@ LR=0.1
 LR_STRATEGY=piecewise_decay
 
 # data params
-cd /
-tar xf /ImageNet.tar
-cd -
 DATA_PATH="/ImageNet"
 TOTAL_IMAGES=1281167
 CLASS_DIM=1000
@@ -49,8 +46,6 @@ python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
 hostname -i
 
 env
-
-sleep 5m
 
 ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
 
