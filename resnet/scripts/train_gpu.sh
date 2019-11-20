@@ -43,15 +43,15 @@ fi
 
 python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
 
-hostname -i
+current_ip=`hostname -i`
 
 env
 
-ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
+ips="`python utils/k8s_tools.py fetch_ips k8s_ips`"
 
 distributed_args=""
 if [[ ${ips} != ""]]; then
-    distributed_args="--cluster_node_ips=$ips"
+    distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
 fi
 
 if [[ ${NUM_CARDS} == "1" ]]; then
