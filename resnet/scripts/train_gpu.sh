@@ -22,6 +22,9 @@ LR=0.1
 LR_STRATEGY=piecewise_decay
 
 # data params
+cd /
+tar xf /ImageNet.tar
+cd -
 DATA_PATH="/ImageNet"
 TOTAL_IMAGES=1281167
 CLASS_DIM=1000
@@ -41,7 +44,7 @@ if [[ ${FUSE} == "True" ]]; then
     export FLAGS_fuse_parameter_groups_size=50
 fi
 
-python utils/k8s_tools.py fetch_ips k8s_ips
+python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
 
 hostname -i
 
