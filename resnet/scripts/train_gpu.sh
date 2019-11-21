@@ -49,8 +49,7 @@ apt-get install -f -y libxext-dev
 
 
 current_ip=`hostname`
-ips=`cat /etc/mpi/hostfile |awk -F ' ' '{printf "%s,",$1}'`
-
+ips=${iplist}
 distributed_args=""
 if [[ ${ips} != "" ]]; then
     distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
@@ -82,3 +81,5 @@ python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        --nccl_comm_num=${NCCL_COMM_NUM} \
        --use_hierarchical_allreduce=${USE_HIERARCHICAL_ALLREDUCE} \
        --fp16=${FP16}
+
+cat log/workerlog.0
