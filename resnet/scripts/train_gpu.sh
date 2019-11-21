@@ -42,10 +42,10 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
-apt-get install libglib2.0-0
-apt-get install libsm6
-apt-get install libxrender1
-apt-get install libxext-dev
+apt-get install -y --force-yes libglib2.0-0
+apt-get install -y --force-yes libsm6
+apt-get install -y --force-yes libxrender1
+apt-get install -y --force-yes libxext-dev
 
 
 current_ip=`HOSTNAME`
