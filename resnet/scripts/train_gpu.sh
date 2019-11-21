@@ -43,12 +43,11 @@ fi
 
 pip install kubernetes
 
-python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
-
 current_ip=`hostname -i`
-
 env
 
+sleep 5m
+python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
 ips="`python utils/k8s_tools.py fetch_ips k8s_ips`"
 
 distributed_args=""

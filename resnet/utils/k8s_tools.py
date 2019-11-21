@@ -18,7 +18,7 @@ import sys
 import time
 import socket
 from kubernetes import client, config
-NAMESPACE = os.getenv("NAMESPACE", "default")
+NAMESPACE = os.getenv("NAMESPACE")
 if os.getenv("KUBERNETES_SERVICE_HOST", None):
     config.load_incluster_config()
 else:
