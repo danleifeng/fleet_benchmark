@@ -41,6 +41,8 @@ if [[ ${FUSE} == "True" ]]; then
     export FLAGS_fuse_parameter_groups_size=50
 fi
 
+pip install kubernetes
+
 python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
 
 current_ip=`hostname -i`
