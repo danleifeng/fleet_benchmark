@@ -48,8 +48,7 @@ apt-get install -y --force-yes libxrender1
 apt-get install -y --force-yes libxext-dev
 
 
-current_ip=`HOSTNAME`
-
+current_ip=`hostname`
 ips="cat /etc/mpi/hostfile |awk -F ' ' '{printf "%s,",$1}'"
 
 distributed_args=""
