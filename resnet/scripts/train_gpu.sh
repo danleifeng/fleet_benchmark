@@ -49,10 +49,10 @@ apt-get install -f -y libxext-dev
 
 
 current_ip=`hostname`
-ips="cat /etc/mpi/hostfile |awk -F ' ' '{printf "%s,",$1}'"
+ips=`cat /etc/mpi/hostfile |awk -F ' ' '{printf "%s,",$1}'`
 
 distributed_args=""
-if [[ ${ips} != ""]]; then
+if [[ ${ips} != "" ]]; then
     distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
 fi
 
