@@ -42,13 +42,15 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
+apt-get install libglib2.0-0
+apt-get install libsm6
+apt-get install libxrender1
+apt-get install libxext-dev
 
-current_ip=`hostname -i`
-env
 
-sleep 5m
-python /fleet_benchmark/resnet/utils/k8s_tools.py fetch_ips k8s_ips
-ips="`python utils/k8s_tools.py fetch_ips k8s_ips`"
+current_ip=`HOSTNAME`
+
+ips="cat /etc/mpi/hostfile |awk -F ' ' '{printf "%s,",$1}'"
 
 distributed_args=""
 if [[ ${ips} != ""]]; then
