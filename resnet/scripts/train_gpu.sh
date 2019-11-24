@@ -10,7 +10,7 @@ export GLOG_logtostderr=1
 export FLAGS_eager_delete_tensor_gb=0
 export NCCL_DEBUG=INFO
 
-export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64/:/usr/lib64/:/usr/local/lib/:$LD_LIBRARY_PATH
 export PADDLE_PSERVER_PORT=9184
 
 set -xe
