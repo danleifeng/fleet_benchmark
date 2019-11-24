@@ -49,7 +49,7 @@ apt-get install -f -y libxext-dev
 
 
 current_ip=`hostname`
-ips="paddle-resnet50-job-worker-0,paddle-resnet50-job-worker-2"
+ips="paddle-resnet50-job-worker-0,paddle-resnet50-job-worker-1"
 distributed_args=""
 if [[ ${ips} != "" ]]; then
     distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
