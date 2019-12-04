@@ -52,11 +52,13 @@ apt-get install -f -y libxrender1
 apt-get install -f -y libxext-dev
 
 
-current_ip=`hostname`
-ips="paddle-resnet50-job-worker-0,paddle-resnet50-job-worker-1"
+#current_ip=`hostname`
+#ips="paddle-resnet50-job-worker-0,paddle-resnet50-job-worker-1"
+ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
 distributed_args=""
 if [[ ${ips} != "" ]]; then
-    distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
+    #distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
+    distributed_args="--cluster_node_ips=${ips}"
 fi
 
 if [[ ${NUM_CARDS} == "1" ]]; then
