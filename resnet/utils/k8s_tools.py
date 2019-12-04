@@ -19,16 +19,17 @@ import time
 import socket
 from kubernetes import client, config
 #NAMESPACE = os.getenv("NAMESPACE")
-NAMESPACE = os.getenv("PMIX_NAMESPACE")
+NAMESPACE = os.getenv("default")
 if os.getenv("KUBERNETES_SERVICE_HOST", None):
     config.load_incluster_config()
 else:
     config.load_kube_config()
 v1 = client.CoreV1Api()
+'''
 ret = v1.list_pod_for_all_namespaces(watch=False)
 for i in ret.items:
     print("%s\t%s\t%s" % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))
-
+'''
 def get_pod_status(item):
     phase = item.status.phase
 
