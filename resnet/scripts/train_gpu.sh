@@ -51,23 +51,20 @@ apt-get install -f -y libxrender1
 apt-get install -f -y libxext-dev
 
 
-#current_ip=`hostname`
-#ips="paddle-resnet50-job-worker-0,paddle-resnet50-job-worker-1"
-env
-
-ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
+current_ip=`hostname -i`
+ips = "`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`"
 echo "ips: ${ips}"
 distributed_args=""
 if [[ ${ips} != "" ]]; then
-    #distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
-    distributed_args="--cluster_node_ips=${ips}"
+    distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
+    #distributed_args="--cluster_node_ips=${ips}"
 fi
 
 if [[ ${NUM_CARDS} == "1" ]]; then
     distributed_args="${distributed_args} --selected_gpus 0"
 fi
 
-sleep 1h
+#sleep 1h
 python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        ./train_with_fleet.py \
        --model=${MODEL} \
