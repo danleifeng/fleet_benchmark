@@ -1,5 +1,6 @@
 #!/bin/bash
 #sleep 10m
+set -x
 export FLAGS_sync_nccl_allreduce=1
 export FLAGS_cudnn_exhaustive_search=1
 export FLAGS_conv_workspace_size_limit=7000 #MB
@@ -13,8 +14,6 @@ export NCCL_DEBUG=INFO
 ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.7 /usr/lib/x86_64-linux-gnu/libcudnn.so
 export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64/:/usr/lib/x86_64-linux-gnu/:/usr/lib64/:/usr/local/lib/:$LD_LIBRARY_PATH
 export PADDLE_PSERVER_PORT=9184
-
-set -xe
 
 MODEL=ResNet50 #VGG16
 MODEL_SAVE_PATH="output/"
@@ -54,7 +53,10 @@ apt-get install -f -y libxext-dev
 
 #current_ip=`hostname`
 #ips="paddle-resnet50-job-worker-0,paddle-resnet50-job-worker-1"
+env
+
 ips = "`python utils/k8s_tools.py fetch_ips k8s_ips`"
+echo "ips: ${ips}"
 distributed_args=""
 if [[ ${ips} != "" ]]; then
     #distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
@@ -64,8 +66,6 @@ fi
 if [[ ${NUM_CARDS} == "1" ]]; then
     distributed_args="${distributed_args} --selected_gpus 0"
 fi
-
-set -x
 
 python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        ./train_with_fleet.py \
