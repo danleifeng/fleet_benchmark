@@ -67,6 +67,7 @@ if [[ ${NUM_CARDS} == "1" ]]; then
     distributed_args="${distributed_args} --selected_gpus 0"
 fi
 
+sleep 1h
 python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        ./train_with_fleet.py \
        --model=${MODEL} \
