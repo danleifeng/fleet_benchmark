@@ -52,8 +52,8 @@ apt-get install -f -y libxext-dev
 
 
 current_ip=`hostname -i`
-ips = "`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`"
-echo "ips: ${ips}"
+ips=`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`
+
 distributed_args=""
 if [[ ${ips} != "" ]]; then
     distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
