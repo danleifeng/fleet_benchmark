@@ -19,7 +19,7 @@ MODEL=ResNet50 #VGG16
 MODEL_SAVE_PATH="output/"
 
 # training params
-NUM_EPOCHS=2
+NUM_EPOCHS=5
 BATCH_SIZE=32
 LR=0.1
 LR_STRATEGY=piecewise_decay
@@ -36,7 +36,7 @@ FUSE=True
 NCCL_COMM_NUM=1
 NUM_THREADS=2
 USE_HIERARCHICAL_ALLREDUCE=False
-NUM_CARDS=1
+NUM_CARDS=8
 FP16=False #whether to use float16 
 
 if [[ ${FUSE} == "True" ]]; then
