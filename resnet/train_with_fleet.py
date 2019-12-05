@@ -61,7 +61,9 @@ add_arg('lr_strategy',      str,   "piecewise_decay",    "Set the learning rate 
 add_arg('model',            str,   "SE_ResNeXt50_32x4d", "Set the network to use.")
 add_arg('data_dir',         str,   "./data/ILSVRC2012/",  "The ImageNet dataset root dir.")
 add_arg('fp16',             bool,  False,                "Enable half precision training with fp16." )
+add_arg('data_format',      str,   "NCHW",               "Tensor data format when training.")
 add_arg('scale_loss',       float, 1.0,                  "Scale loss for fp16." )
+add_arg('use_dynamic_loss_scaling',     bool,   True,    "Whether to use dynamic loss scaling.")
 add_arg('l2_decay',         float, 1e-4,                 "L2_decay parameter.")
 add_arg('momentum_rate',    float, 0.9,                  "momentum_rate.")
 add_arg('use_label_smoothing',      bool,      False,        "Whether to use label_smoothing or not")
@@ -76,6 +78,7 @@ add_arg('is_distill',       bool,  False,        "is distill or not")
 add_arg('profile',             bool,  False,                "Enable profiler or not." )
 add_arg('fetch_steps',      int,  10,                "Enable profiler or not." )
 
+add_arg('do_test',          bool,  False,                 "Whether do test every epoch.")
 add_arg('use_gpu',          bool,  True,                 "Whether to use GPU or not.")
 add_arg('fuse', bool, False,                      "Whether to use tensor fusion.")
 add_arg('nccl_comm_num',        int,  1,                  "nccl comm num")
@@ -84,10 +87,31 @@ add_arg('num_threads',        int,  1,                   "Use num_threads to run
 add_arg('num_iteration_per_drop_scope', int,    100,      "Ihe iteration intervals to clean up temporary variables.")
 add_arg('benchmark_test',          bool,  True,                 "Whether to use print benchmark logs or not.")
 
+add_arg('use_dgc',           bool,  False,          "Whether use DGCMomentum Optimizer or not")
+add_arg('rampup_begin_step', int,   5008,           "The beginning step from which dgc is implemented.")
+
+def get_momentum_optimizer(momentum_kwargs, use_dgc=False, dgc_kwargs={}):
+    if not use_dgc:
+        optimizer = fluid.optimizer.Momentum(**momentum_kwargs)
+    else:
+        dgc_kwargs.update(momentum_kwargs)
+        optimizer = fluid.optimizer.DGCMomentumOptimizer(**dgc_kwargs)
+    return optimizer
+
 def optimizer_setting(params):
     ls = params["learning_strategy"]
     l2_decay = params["l2_decay"]
     momentum_rate = params["momentum_rate"]
+    regularizer=fluid.regularizer.L2Decay(l2_decay)
+
+    momentum_kwargs = {'learning_rate': None,
+                       'momentum': momentum_rate,
+                       'regularization': regularizer}
+
+    use_dgc = params["use_dgc"]
+    rampup_begin_step = params['rampup_begin_step']
+    dgc_kwargs = {'rampup_begin_step': rampup_begin_step}
+
     if ls["name"] == "piecewise_decay":
         global_batch_size = ls["batch_size"] * num_trainers
         steps_per_pass = int(math.ceil(params["total_images"] * 1.0 / global_batch_size))
@@ -101,8 +125,9 @@ def optimizer_setting(params):
         lr = [base_lr * (0.1**i) for i in range(len(bd) + 1)]
         lr_var = lr_warmup(fluid.layers.piecewise_decay(boundaries=bd, values=lr),\
                            warmup_steps, start_lr, base_lr)
-        optimizer = fluid.optimizer.Momentum(learning_rate=lr_var,momentum=momentum_rate,\
-                                            regularization=fluid.regularizer.L2Decay(l2_decay))
+        momentum_kwargs['learning_rate'] = lr_var
+
+        optimizer = get_momentum_optimizer(momentum_kwargs, use_dgc, dgc_kwargs)
 
     elif ls["name"] == "cosine_decay":
         assert "total_images" in params
@@ -115,11 +140,10 @@ def optimizer_setting(params):
         lr = params["lr"]
         num_epochs = params["num_epochs"]
 
-        optimizer = fluid.optimizer.Momentum(
-            learning_rate=fluid.layers.cosine_decay(
-                learning_rate=lr, step_each_epoch=step, epochs=num_epochs),
-            momentum=momentum_rate,
-            regularization=fluid.regularizer.L2Decay(l2_decay))
+        momentum_kwargs['learning_rate'] = fluid.layers.cosine_decay(
+            learning_rate=lr, step_each_epoch=step, epochs=num_epochs)
+
+        optimizer = get_momentum_optimizer(momentum_kwargs, use_dgc, dgc_kwargs)
 
     elif ls["name"] == "cosine_warmup_decay":
         assert "total_images" in params
@@ -132,11 +156,10 @@ def optimizer_setting(params):
         lr = params["lr"]
         num_epochs = params["num_epochs"]
 
-        optimizer = fluid.optimizer.Momentum(
-            learning_rate=cosine_decay_with_warmup(
-                learning_rate=lr, step_each_epoch=step, epochs=num_epochs),
-            momentum=momentum_rate,
-            regularization=fluid.regularizer.L2Decay(l2_decay))
+        momentum_kwargs['learning_rate'] = cosine_decay_with_warmup(
+            learning_rate=lr, step_each_epoch=step, epochs=num_epochs)
+
+        optimizer = get_momentum_optimizer(momentum_kwargs, use_dgc, dgc_kwargs)
 
     elif ls["name"] == "linear_decay":
         assert "total_images" in params
@@ -152,14 +175,16 @@ def optimizer_setting(params):
         total_step = step * num_epochs
         lr = fluid.layers.polynomial_decay(
             start_lr, total_step, end_lr, power=1)
-        optimizer = fluid.optimizer.Momentum(
-            learning_rate=lr,
-            momentum=momentum_rate,
-            regularization=fluid.regularizer.L2Decay(l2_decay))
+        momentum_kwargs['learning_rate'] = lr
+        optimizer = get_momentum_optimizer(momentum_kwargs, use_dgc, dgc_kwargs)
     elif ls["name"] == "adam":
+        if use_dgc:
+            print("Warning: Adam is not support dgc. So will not use dgc")
         lr = params["lr"]
         optimizer = fluid.optimizer.Adam(learning_rate=lr)
     elif ls["name"] == "rmsprop_cosine":
+        if use_dgc:
+            print("Warning: Adam is not support dgc. So will not use dgc")
         assert "total_images" in params
         total_images = params["total_images"]
         images_per_trainer = int(math.ceil(float(total_images) / num_trainers))
@@ -178,12 +203,8 @@ def optimizer_setting(params):
             epsilon=1)
     else:
         lr = params["lr"]
-        l2_decay = params["l2_decay"]
-        momentum_rate = params["momentum_rate"]
-        optimizer = fluid.optimizer.Momentum(
-            learning_rate=lr,
-            momentum=momentum_rate,
-            regularization=fluid.regularizer.L2Decay(l2_decay))
+        momentum_kwargs['learning_rate'] = lr
+        optimizer = get_momentum_optimizer(momentum_kwargs, use_dgc, dgc_kwargs)
 
     return optimizer
 
@@ -209,10 +230,10 @@ def net_config(image, model, args, is_train, label=0, y_a=0, y_b=0, lam=0.0):
     epsilon = args.label_smoothing_epsilon
 
     if not args.is_distill:
-        out = model.net(input=image, class_dim=class_dim)
-        softmax_out = fluid.layers.softmax(out, use_cudnn=False)
+        out = model.net(input=image, args=args, class_dim=class_dim)
         if is_train:
             if use_mixup:
+                softmax_out = fluid.layers.softmax(out, use_cudnn=False)
                 loss_a = calc_loss(epsilon,y_a,class_dim,softmax_out,use_label_smoothing)
                 loss_b = calc_loss(epsilon,y_b,class_dim,softmax_out,use_label_smoothing)
                 loss_a_mean = fluid.layers.mean(x = loss_a)
@@ -222,12 +243,13 @@ def net_config(image, model, args, is_train, label=0, y_a=0, y_b=0, lam=0.0):
                 return avg_cost
             else:
                 print("Use fluid.layers.softmax_with_cross_entropy.")
-                cost, prob = fluid.layers.softmax_with_cross_entropy(
+                cost, softmax_out = fluid.layers.softmax_with_cross_entropy(
                     out, label, return_softmax=True)
         else:
-            cost = fluid.layers.cross_entropy(input=softmax_out, label=label)
+            cost, softmax_out = fluid.layers.softmax_with_cross_entropy(
+                out, label, return_softmax=True)
     else:
-        out1, out2 = model.net(input=image, class_dim=args.class_dim)
+        out1, out2 = model.net(input=image, args=args, class_dim=args.class_dim)
         softmax_out1, softmax_out = fluid.layers.softmax(out1), fluid.layers.softmax(out2)
         smooth_out1 = fluid.layers.label_smooth(label=softmax_out1, epsilon=0.0, dtype="float32")
         cost = fluid.layers.cross_entropy(input=softmax_out, label=smooth_out1, soft_label=True)
@@ -264,11 +286,15 @@ def build_program(is_train, main_prog, startup_prog, args, dist_strategy=None):
         with fluid.unique_name.guard():
             if is_train and  use_mixup:
                 image, y_a, y_b, lam = fluid.layers.read_file(py_reader)
+                if args.data_format == 'NHWC':
+                    image = fluid.layers.transpose(image, [0, 2, 3, 1])
                 avg_cost = net_config(image=image, y_a=y_a, y_b=y_b, lam=lam, model=model, args=args, label=0, is_train=True)
                 avg_cost.persistable = True
                 build_program_out = [py_reader, avg_cost]
             else:
                 image, label = fluid.layers.read_file(py_reader)
+                if args.data_format == 'NHWC':
+                    image = fluid.layers.transpose(image, [0, 2, 3, 1])
                 avg_cost, acc_top1, acc_top5 = net_config(image, model, args, label=label, is_train=is_train)
                 avg_cost.persistable = True
                 acc_top1.persistable = True
@@ -284,11 +310,15 @@ def build_program(is_train, main_prog, startup_prog, args, dist_strategy=None):
                 params["learning_strategy"]["name"] = args.lr_strategy
                 params["l2_decay"] = args.l2_decay
                 params["momentum_rate"] = args.momentum_rate
+                params["use_dgc"] = args.use_dgc
+                params["rampup_begin_step"] = args.rampup_begin_step
 
                 optimizer = optimizer_setting(params)
                 global_lr = optimizer._global_learning_rate()
                 if args.fp16:
-                    optimizer = fluid.contrib.mixed_precision.decorate(optimizer, use_dynamic_loss_scaling=False, init_loss_scaling=128.0)
+                    optimizer = fluid.contrib.mixed_precision.decorate(optimizer,
+                                                                       init_loss_scaling=args.scale_loss,
+                                                                       use_dynamic_loss_scaling=args.use_dynamic_loss_scaling)
                 dist_optimizer = fleet.distributed_optimizer(optimizer, strategy=dist_strategy)
                 _, param_grads = dist_optimizer.minimize(avg_cost)
 
@@ -330,8 +360,8 @@ def train(args):
     dist_strategy = DistributedStrategy()
     dist_strategy.exec_strategy = exec_strategy
     dist_strategy.enable_inplace = args.with_inplace
-    if args.fuse:
-        dist_strategy.fuse_all_reduce_ops = 1
+    if not args.fuse:
+        dist_strategy.fuse_all_reduce_ops = False
     dist_strategy.nccl_comm_num = args.nccl_comm_num
 
     role = role_maker.PaddleCloudRoleMaker(is_collective=True)
@@ -417,6 +447,10 @@ def train(args):
     train_exe = exe
 
     params = models.__dict__[args.model]().params
+
+    train_speed_list = []
+    acc1_logs = []
+    acc5_logs = []
     for pass_id in range(params["num_epochs"]):
         train_py_reader.start()
         train_info = [[], [], []]
@@ -480,9 +514,9 @@ def train(args):
             train_acc5 = np.array(train_info[2]).mean()
         train_end=time.time()
         train_speed = (batch_id * train_batch_size) / (train_end - train_begin)
+        train_speed_list.append(train_speed)
 
-        # test only run in last epoch
-        if (pass_id + 1) == params["num_epochs"]:
+        if trainer_id == 0 and (args.do_test or (pass_id + 1) == params["num_epochs"]):
             test_py_reader.start()
             test_batch_id = 0
             try:
@@ -513,30 +547,51 @@ def train(args):
             test_loss = np.array(test_info[0]).mean()
             test_acc1 = np.array(test_info[1]).mean()
             test_acc5 = np.array(test_info[2]).mean()
-            if trainer_id == 0:
-                model_path = os.path.join(model_save_dir + '/' + model_name, str(pass_id))
-                if not os.path.isdir(model_path):
-                    os.makedirs(model_path)
 
-                fluid.io.save_persistables(exe, model_path, main_program=fleet._origin_program)
-                if args.benchmark_test:
-                    if not os.path.isdir("./benchmark_logs/"):
-                        os.makedirs("./benchmark_logs/")
-                    with open("./benchmark_logs/log_%d" % trainer_id, 'w') as f:
-                        result = dict()
-                        result['0'] = dict()
-                        result['0']['acc1'] = str(test_acc1)
-                        result['0']['acc5'] = str(test_acc5)
-                        result['1'] = str(train_speed * num_trainers)
-                        print(result)
-                        f.writelines(json.dumps(result) + '\n')
-        if use_mixup:
-            print("End pass {0}, train_loss {1}, speed {2}".format(pass_id, "%.5f"%train_loss, "%.2f" % train_speed))
+            acc1_logs.append(test_acc1)
+            acc5_logs.append(test_acc5)
+
+            if use_mixup:
+                print("End pass {0}, train_loss {1}, test_loss {2}, test_acc1 {3}, test_acc5 {4}, speed {5}".format(
+                      pass_id, "%.5f"%train_loss, "%.5f"%test_loss, "%.5f"%test_acc1, "%.5f"%test_acc5,
+                      "%.2f" % train_speed))
+            else:
+                print("End pass {0}, train_loss {1}, train_acc1 {2}, train_acc5 {3}, "
+                  "test_loss {4}, test_acc1 {5}, test_acc5 {6}, speed {7}".format(
+                      pass_id, "%.5f"%train_loss, "%.5f"%train_acc1, "%.5f"%train_acc5, "%.5f"%test_loss,
+                      "%.5f"%test_acc1, "%.5f"%test_acc5, "%.2f" % train_speed))
+
         else:
-            print("End pass {0}, train_loss {1}, train_acc1 {2}, train_acc5 {3}, ""speed {4}".format(
+            if use_mixup:
+                print("End pass {0}, train_loss {1}, speed {2}".format(pass_id, "%.5f"%train_loss, "%.2f" % train_speed))
+            else:
+                print("End pass {0}, train_loss {1}, train_acc1 {2}, train_acc5 {3}, ""speed {4}".format(
                     pass_id, "%.5f"%train_loss, "%.5f"%train_acc1, "%.5f"%train_acc5, "%.2f" % train_speed))
 
         sys.stdout.flush()
+ 
+    # save in last epoch
+    if trainer_id == 0:
+        model_path = os.path.join(model_save_dir + '/' + model_name, str(pass_id))
+        if not os.path.isdir(model_path):
+            os.makedirs(model_path)
+
+        fluid.io.save_persistables(exe, model_path, main_program=fleet._origin_program)
+        if args.benchmark_test:
+            if not os.path.isdir("./benchmark_logs/"):
+                os.makedirs("./benchmark_logs/")
+            with open("./benchmark_logs/log_%d" % trainer_id, 'w') as f:
+                result = dict()
+                result['0'] = dict()
+                result['0']['acc1'] = test_acc1
+                result['0']['acc5'] = test_acc5
+                result['0']['result_log'] = dict()
+                result['0']['result_log']['acc1'] = acc1_logs
+                result['0']['result_log']['acc5'] = acc5_logs
+                # median speed of all epochs
+                result['1'] = max(train_speed_list) * num_trainers
+                print(str(result))
+                f.writelines(str(result))
 
 
 def print_paddle_environments():
@@ -552,11 +607,17 @@ def main():
     args = parser.parse_args()
     # this distributed benchmark code can only support gpu environment.
     assert args.use_gpu, "only for gpu implementation."
+    if args.use_dgc:
+        if args.fuse:
+            print("Warning: Use dgc must close fuse for now, so code will set fuse=False")
+            args.fuse = False
+        if args.fp16:
+            print("Warning: DGC unsupport fp16 for now, so code will set fp16=False")
+            args.fp16 = False
     print_arguments(args)
     print_paddle_environments()
     check_gpu(args.use_gpu)
     train(args)
-
 
 if __name__ == '__main__':
     main()

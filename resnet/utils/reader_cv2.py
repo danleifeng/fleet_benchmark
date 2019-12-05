@@ -14,16 +14,14 @@
 
 import os
 import functools
+import math
 import numpy as np
 import paddle
 import paddle.fluid as fluid
 import random
 
-from img_tool import process_image
+from .img_tool import process_image
 DATA_DIR=""
-
-THREAD=4
-BUF_SIZE=4000
 
 def _reader_creator(settings,
                     file_list,
@@ -32,12 +30,19 @@ def _reader_creator(settings,
                     color_jitter=False,
                     rotate=False,
                     data_dir=DATA_DIR,
-                    pass_id_as_seed=0):
-    def reader():
+                    pass_id_as_seed=0,
+                    threads=4,
+                    buf_size=4000):
+    def _reader():
         with open(file_list) as flist:
             full_lines = [line.strip() for line in flist]
             if shuffle:
-                random.Random(pass_id_as_seed).shuffle(full_lines)
+                if (not hasattr(_reader, 'seed')):
+                    _reader.seed = pass_id_as_seed
+                random.Random(_reader.seed).shuffle(full_lines)
+                print("reader shuffle seed", _reader.seed)
+                if _reader.seed is not None:
+                    _reader.seed += 1
             
             if mode == 'train':
                 trainer_id = int(os.getenv("PADDLE_TRAINER_ID", "0"))
@@ -46,9 +51,17 @@ def _reader_creator(settings,
                 else:
                     trainer_count = int(os.getenv("PADDLE_TRAINERS", "1"))
 
-                per_node_lines = len(full_lines) // trainer_count
-                lines = full_lines[trainer_id * per_node_lines:(trainer_id + 1)
-                                   * per_node_lines]
+                per_node_lines = int(math.ceil(len(full_lines) * 1.0 / trainer_count))
+                total_lines = per_node_lines * trainer_count
+
+                # aligned full_lines so that it can evenly divisible
+                full_lines += full_lines[:(total_lines - len(full_lines))]
+                assert len(full_lines) == total_lines
+
+                # trainer get own sample
+                lines = full_lines[trainer_id:total_lines:trainer_count]
+                assert len(lines) == per_node_lines
+
                 print("trainerid, trainer_count", trainer_id, trainer_count)
                 print(
                     "read images from %d, length: %d, lines length: %d, total: %d"
@@ -82,10 +95,14 @@ def _reader_creator(settings,
         rotate=rotate,
         crop_size=224)
     reader = paddle.reader.xmap_readers(
-        image_mapper, reader, THREAD, BUF_SIZE, order=False)
+        image_mapper, _reader, threads, buf_size, order=False)
     return reader
 
-def train(settings, data_dir=DATA_DIR, pass_id_as_seed=0):
+def train(settings,
+          data_dir=DATA_DIR,
+          pass_id_as_seed=0,
+          threads=4,
+          buf_size=4000):
     file_list = os.path.join(data_dir, 'train.txt')
     reader =  _reader_creator(
         settings,
@@ -96,16 +113,18 @@ def train(settings, data_dir=DATA_DIR, pass_id_as_seed=0):
         rotate=False,
         data_dir=data_dir,
         pass_id_as_seed=pass_id_as_seed,
+        threads=threads,
+        buf_size=buf_size,
         )
     return reader
 
-def val(settings,data_dir=DATA_DIR):
+def val(settings, data_dir=DATA_DIR, threads=16, buf_size=4000):
     file_list = os.path.join(data_dir, 'val.txt')
     return _reader_creator(settings ,file_list, 'val', shuffle=False, 
-            data_dir=data_dir)
+            data_dir=data_dir, threads=threads, buf_size=buf_size)
 
 
-def test(data_dir=DATA_DIR):
+def test(data_dir=DATA_DIR, threads=4, buf_size=4000):
     file_list = os.path.join(data_dir, 'val.txt')
     return _reader_creator(file_list, 'test', shuffle=False,
-            data_dir=data_dir)
+            data_dir=data_dir, threads=threads, buf_size=buf_size)

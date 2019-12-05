@@ -104,6 +104,7 @@ def process_image(sample, mode, color_jitter, rotate, settings,
     std = [0.229, 0.224, 0.225] if std is None else std
 
     raw_img = sample[0]
+        
     img = cv2.imread(raw_img, cv2.IMREAD_COLOR)
 
     if mode == 'train':
