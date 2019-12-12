@@ -21,7 +21,7 @@ MODEL_SAVE_PATH="output/"
 
 # training params
 NUM_EPOCHS=5
-BATCH_SIZE=32
+BATCH_SIZE=128
 LR=0.1
 LR_STRATEGY=piecewise_decay
 
@@ -35,8 +35,8 @@ DATA_FORMAT="NCHW"
 
 #gpu params
 FUSE=True
-NCCL_COMM_NUM=1
-NUM_THREADS=2
+NCCL_COMM_NUM=2
+NUM_THREADS=3
 USE_HIERARCHICAL_ALLREDUCE=False
 NUM_CARDS=8
 FP16=False #whether to use float16 
@@ -95,7 +95,10 @@ python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        --nccl_comm_num=${NCCL_COMM_NUM} \
        --use_hierarchical_allreduce=${USE_HIERARCHICAL_ALLREDUCE} \
        --fp16=${FP16} \
+       --profile=True \
        --use_dgc=${USE_DGC} \
        --rampup_begin_step=${DGC_RAMPUP_BEGIN_STEP}
 
 cat log/workerlog.0
+cat benchmark_logs/log_0
+aws s3 cp ./profile_0 s3://s3-n1/
