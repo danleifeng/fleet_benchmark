@@ -55,11 +55,14 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
+cd /var/lib/dpkg/updates
+rm -r ./*
+cd -
+apt-get update
 apt-get install -f -y libglib2.0-0
 apt-get install -f -y libsm6
 apt-get install -f -y libxrender1
 apt-get install -f -y libxext-dev
-apt-get install -f -y libglib2.0-dev
 
 current_ip=`hostname -i`
 ips=`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`
