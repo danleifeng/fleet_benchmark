@@ -58,6 +58,7 @@ pip install kubernetes
 cd /var/lib/dpkg/updates
 rm -r ./*
 cd -
+dpkg --configure -a
 apt-get update
 apt-get install -f -y libglib2.0-0
 apt-get install -f -y libsm6
