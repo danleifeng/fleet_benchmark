@@ -60,6 +60,8 @@ rm -r ./*
 cd -
 dpkg --configure -a
 apt-get update
+rm -rf /var/lib/dpkg/lock-frontend
+rm -rf /var/lib/dpkg/lock
 apt-get install -f -y libglib2.0-0
 apt-get install -f -y libsm6
 apt-get install -f -y libxrender1
