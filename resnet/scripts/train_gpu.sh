@@ -58,10 +58,12 @@ pip install kubernetes
 cd /var/lib/dpkg/updates
 rm -r ./*
 cd -
+rm -rf /var/lib/apt/lists/lock
+rm -rf /var/cache/apt/archives/lock
+rm -rf /var/lib/dpkg/lock*
 dpkg --configure -a
 apt-get update
-rm -rf /var/lib/dpkg/lock-frontend
-rm -rf /var/lib/dpkg/lock
+apt update
 apt-get install -f -y libglib2.0-0
 apt-get install -f -y libsm6
 apt-get install -f -y libxrender1
