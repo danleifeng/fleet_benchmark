@@ -60,19 +60,8 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
-pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0
-nvidia-dali-nightly
-'
-cd /var/lib/dpkg/updates
-rm -r ./*
-cd -
-rm -rf /var/lib/apt/lists/lock
-rm -rf /var/cache/apt/archives/lock
-rm -rf /var/lib/dpkg/lock*
-dpkg --configure -a
-apt-get update
-apt update
-'
+url="https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0"
+pip install --extra-index-url ${url} nvidia-dali-nightly
 apt-get install -f -y libglib2.0-0
 apt-get install -f -y libsm6
 apt-get install -f -y libxrender1
