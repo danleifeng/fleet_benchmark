@@ -105,7 +105,7 @@ python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        --nccl_comm_num=${NCCL_COMM_NUM} \
        --use_hierarchical_allreduce=${USE_HIERARCHICAL_ALLREDUCE} \
        --fp16=${FP16} \
-       --profile=True \
+       --profile=False \
        --use_dgc=${USE_DGC} \
        --rampup_begin_step=${DGC_RAMPUP_BEGIN_STEP}
 
