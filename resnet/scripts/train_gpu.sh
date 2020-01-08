@@ -2,12 +2,12 @@
 #sleep 10m
 set -x
 export FLAGS_sync_nccl_allreduce=1
-export FLAGS_cudnn_exhaustive_search=0
-#export FLAGS_conv_workspace_size_limit=3000 #MB
+export FLAGS_cudnn_exhaustive_search=1
+export FLAGS_conv_workspace_size_limit=4000 #MB
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
+export FLAGS_fraction_of_gpu_memory_to_use=0.98
 
 #export GLOG_v=1
-#export GLOG_vmodule=conv_cudnn_op=10,conv_cudnn_helper=10
 export GLOG_logtostderr=1
 export FLAGS_eager_delete_tensor_gb=0
 export NCCL_DEBUG=INFO
@@ -30,16 +30,20 @@ DATA_PATH="/ImageNet"
 TOTAL_IMAGES=1281167
 CLASS_DIM=1000
 IMAGE_SHAPE=3,224,224
-DATA_FORMAT="NCHW"
+DATA_FORMAT="NHWC"
 
 
 #gpu params
 FUSE=True
-NCCL_COMM_NUM=2
-NUM_THREADS=3
+NCCL_COMM_NUM=1
+NUM_THREADS=2
 USE_HIERARCHICAL_ALLREDUCE=False
 NUM_CARDS=8
 FP16=False #whether to use float16 
+use_dali=False
+if [[ ${use_dali} == "True" ]]; then
+    export FLAGS_fraction_of_gpu_memory_to_use=0.8
+fi
 
 # dgc params
 USE_DGC=False # whether to use dgc
@@ -55,6 +59,8 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
+pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0
+nvidia-dali-nightly
 '
 cd /var/lib/dpkg/updates
 rm -r ./*
@@ -77,7 +83,6 @@ ips=`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`
 distributed_args=""
 if [[ ${ips} != "" ]]; then
     distributed_args="--cluster_node_ips=${ips} --node_ip=${current_ip}"
-    #distributed_args="--cluster_node_ips=${ips}"
 fi
 
 if [[ ${NUM_CARDS} == "1" ]]; then
@@ -99,15 +104,20 @@ python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        --lr=${LR} \
        --num_epochs=${NUM_EPOCHS} \
        --l2_decay=1e-4 \
-       --scale_loss=1.0 \
+       --scale_loss=128.0 \
+       --use_dynamic_loss_scaling=True \
        --fuse=${FUSE} \
        --num_threads=${NUM_THREADS} \
        --nccl_comm_num=${NCCL_COMM_NUM} \
        --use_hierarchical_allreduce=${USE_HIERARCHICAL_ALLREDUCE} \
        --fp16=${FP16} \
-       --profile=False \
+       --use_dali=${use_dali} \
        --use_dgc=${USE_DGC} \
-       --rampup_begin_step=${DGC_RAMPUP_BEGIN_STEP}
+       --fetch_steps=10 \
+       --do_test=True \
+       --profile=False \
+       --rampup_begin_step=${DGC_RAMPUP_BEGIN_STEP} \
+       --use_recompute=False
 
 cat log/workerlog.0
 cat benchmark_logs/log_0
