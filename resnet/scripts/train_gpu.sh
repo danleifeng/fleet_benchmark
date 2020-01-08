@@ -30,7 +30,8 @@ DATA_PATH="/ImageNet"
 TOTAL_IMAGES=1281167
 CLASS_DIM=1000
 IMAGE_SHAPE=3,224,224
-DATA_FORMAT="NHWC"
+#DATA_FORMAT="NHWC"
+DATA_FORMAT="NCHW"
 
 
 #gpu params
@@ -104,7 +105,7 @@ python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        --lr=${LR} \
        --num_epochs=${NUM_EPOCHS} \
        --l2_decay=1e-4 \
-       --scale_loss=128.0 \
+       --scale_loss=1.0 \
        --use_dynamic_loss_scaling=True \
        --fuse=${FUSE} \
        --num_threads=${NUM_THREADS} \
