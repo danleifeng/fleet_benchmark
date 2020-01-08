@@ -60,8 +60,8 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
-url="https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0"
-pip install --extra-index-url ${url} nvidia-dali-nightly
+#url="https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0"
+#pip install --extra-index-url ${url} nvidia-dali-nightly
 
 ps aux | grep -i apt
 
