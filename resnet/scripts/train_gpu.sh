@@ -30,8 +30,8 @@ DATA_PATH="/ImageNet"
 TOTAL_IMAGES=1281167
 CLASS_DIM=1000
 IMAGE_SHAPE=3,224,224
-#DATA_FORMAT="NHWC"
-DATA_FORMAT="NCHW"
+DATA_FORMAT="NHWC"
+#DATA_FORMAT="NCHW"
 
 
 #gpu params
@@ -40,8 +40,8 @@ NCCL_COMM_NUM=1
 NUM_THREADS=2
 USE_HIERARCHICAL_ALLREDUCE=False
 NUM_CARDS=8
-FP16=False #whether to use float16 
-use_dali=False
+FP16=True #whether to use float16 
+use_dali=True
 if [[ ${use_dali} == "True" ]]; then
     export FLAGS_fraction_of_gpu_memory_to_use=0.8
 fi
