@@ -40,8 +40,8 @@ NCCL_COMM_NUM=1
 NUM_THREADS=2
 USE_HIERARCHICAL_ALLREDUCE=False
 NUM_CARDS=8
-FP16=True #whether to use float16 
-use_dali=True
+FP16=False #whether to use float16 
+use_dali=False
 if [[ ${use_dali} == "True" ]]; then
     export FLAGS_fraction_of_gpu_memory_to_use=0.8
 fi
@@ -60,8 +60,8 @@ if [[ ${FUSE} == "True" ]]; then
 fi
 
 pip install kubernetes
-url="https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0"
-pip install --extra-index-url ${url} nvidia-dali-nightly
+#url="https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0"
+#pip install --extra-index-url ${url} nvidia-dali-nightly
 
 ps aux | grep -i apt
 
