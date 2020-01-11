@@ -68,6 +68,8 @@ ps aux | grep -i apt
 apt-get install psmisc
 killall apt apt-get
 
+dpkg --configure -a
+
 apt-get install -f -y libglib2.0-0
 apt-get install -f -y libsm6
 apt-get install -f -y libxrender1
