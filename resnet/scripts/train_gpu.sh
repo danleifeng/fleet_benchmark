@@ -65,8 +65,13 @@ pip install kubernetes
 
 ps aux | grep -i apt
 
+killall apt apt-get
+echo "======kill all apt before....===="
+ps aux | grep -i apt
 apt-get install psmisc
 killall apt apt-get
+
+echo "======kill all apt after....===="
 
 dpkg --configure -a
 
