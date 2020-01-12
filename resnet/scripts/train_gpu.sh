@@ -59,26 +59,25 @@ if [[ ${FUSE} == "True" ]]; then
     export FLAGS_fuse_parameter_groups_size=50
 fi
 
-pip install kubernetes
+#pip install kubernetes
 #url="https://developer.download.nvidia.com/compute/redist/nightly/cuda/10.0"
 #pip install --extra-index-url ${url} nvidia-dali-nightly
 
-ps aux | grep -i apt
+#ps aux | grep -i apt
 
-killall apt apt-get
-echo "======kill all apt before....===="
-ps aux | grep -i apt
-apt-get install psmisc
-killall apt apt-get
+#killall apt apt-get
+#echo "======kill all apt before....===="
+#ps aux | grep -i apt
+#apt-get install psmisc
+#killall apt apt-get
 
-echo "======kill all apt after....===="
+#echo "======kill all apt after....===="
+#dpkg --configure -a
 
-dpkg --configure -a
-
-apt-get install -f -y libglib2.0-0
-apt-get install -f -y libsm6
-apt-get install -f -y libxrender1
-apt-get install -f -y libxext-dev
+#apt-get install -f -y libglib2.0-0
+#apt-get install -f -y libsm6
+#apt-get install -f -y libxrender1
+#apt-get install -f -y libxext-dev
 
 current_ip=`hostname -i`
 ips=`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`
