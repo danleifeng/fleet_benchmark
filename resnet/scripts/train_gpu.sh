@@ -21,7 +21,7 @@ MODEL_SAVE_PATH="output/"
 
 # training params
 NUM_EPOCHS=5
-BATCH_SIZE=128
+BATCH_SIZE=32
 LR=0.1
 LR_STRATEGY=piecewise_decay
 
