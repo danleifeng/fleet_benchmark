@@ -124,3 +124,4 @@ python -m paddle.distributed.launch ${distributed_args} --log_dir log \
 cat log/workerlog.0
 cat benchmark_logs/log_0
 aws s3 cp ./profile_0 s3://s3-n1/
+sleep 30m
