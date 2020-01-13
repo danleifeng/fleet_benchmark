@@ -5,7 +5,7 @@ export FLAGS_sync_nccl_allreduce=1
 export FLAGS_cudnn_exhaustive_search=0
 #export FLAGS_conv_workspace_size_limit=3000 #MB
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
-#export FLAGS_fraction_of_gpu_memory_to_use=0.98
+export FLAGS_fraction_of_gpu_memory_to_use=0.98
 
 export GLOG_v=3
 export GLOG_logtostderr=1
