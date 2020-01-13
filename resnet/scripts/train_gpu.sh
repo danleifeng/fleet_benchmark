@@ -92,7 +92,7 @@ if [[ ${NUM_CARDS} == "1" ]]; then
     distributed_args="${distributed_args} --selected_gpus 0"
 fi
 
-python -m paddle.distributed.launch ${distributed_args} --log_dir log \
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        ./train_with_fleet.py \
        --model=${MODEL} \
        --batch_size=${BATCH_SIZE} \
