@@ -7,21 +7,21 @@ export FLAGS_cudnn_exhaustive_search=0
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
 export FLAGS_fraction_of_gpu_memory_to_use=0.98
 
-export GLOG_v=1
+#export GLOG_v=1
 export GLOG_logtostderr=1
 export FLAGS_eager_delete_tensor_gb=0
 export NCCL_DEBUG=INFO
 
 ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.7 /usr/lib/x86_64-linux-gnu/libcudnn.so
 export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64/:/usr/lib/x86_64-linux-gnu/:/usr/lib64/:/usr/local/lib/:$LD_LIBRARY_PATH
-#export PADDLE_PSERVER_PORT=9184
+export PADDLE_PSERVER_PORT=9184
 
 MODEL=ResNet50 #VGG16
 MODEL_SAVE_PATH="output/"
 
 # training params
 NUM_EPOCHS=5
-BATCH_SIZE=32
+BATCH_SIZE=128
 LR=0.1
 LR_STRATEGY=piecewise_decay
 
@@ -92,7 +92,7 @@ if [[ ${NUM_CARDS} == "1" ]]; then
     distributed_args="${distributed_args} --selected_gpus 0"
 fi
 
-CUDA_VISIBLE_DEVICES=0,1,2,3 python -m paddle.distributed.launch ${distributed_args} --log_dir log \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m paddle.distributed.launch ${distributed_args} --log_dir log \
        ./train_with_fleet.py \
        --model=${MODEL} \
        --batch_size=${BATCH_SIZE} \
