@@ -7,7 +7,7 @@ export FLAGS_cudnn_exhaustive_search=0
 export FLAGS_cudnn_batchnorm_spatial_persistent=1
 export FLAGS_fraction_of_gpu_memory_to_use=0.98
 
-export GLOG_v=3
+export GLOG_v=1
 export GLOG_logtostderr=1
 export FLAGS_eager_delete_tensor_gb=0
 export NCCL_DEBUG=INFO
@@ -78,7 +78,7 @@ fi
 #apt-get install -f -y libsm6
 #apt-get install -f -y libxrender1
 #apt-get install -f -y libxext-dev
-#rm -rf ~/.nv/
+rm -rf ~/.nv/
 
 current_ip=`hostname -i`
 ips=`python utils/k8s_tools.py fetch_ips mpi_role_type=worker`
